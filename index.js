@@ -24,7 +24,7 @@ async function main() {
   await mongoose.connect(process.env.DB_URL);
 }
 
-app.get("/test", (req, res) => {
+app.get("/", (req, res) => {
   console.log(req.cookies.token);
   res.send("Test successfull ");
 });
