@@ -11,7 +11,7 @@ const MessageModel = require("./models/message");
 
 const app = express();
 
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: [ "https://beamish-cheesecake-6369e3.netlify.app", "https://beamish-cheesecake-6369e3.netlify.app/"] , credentials: true }));
 
 app.use(cookieParser());
 app.use(express.json());
