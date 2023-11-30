@@ -38,13 +38,14 @@ app.post("/register", validateCookie, async (req, res) => {
       username,
       password: hashedPassword,
     });
+    console.log("User : ",createdUser);
     jwt.sign(
       { userId: createdUser._id, user: createdUser },
       process.env.SECRET,
       {},
       (err, token) => {
         res.cookie("token", token, { sameSite: "none", secure: true });
-        console.log(createdUser);
+
         res.status(201).json(createdUser);
       }
     );
@@ -67,7 +68,7 @@ app.post("/signin", async (req, res) => {
 
     if (passOk == true) {
       jwt.sign(
-        { userId: findUser._id, username },
+        { userId: findUser._id, user : findUser },
         process.env.SECRET,
         (err, token) => {
           res
@@ -142,7 +143,8 @@ wss.on("connection", (connection, req) => {
         jwt.verify(token, process.env.SECRET, {}, (err, userData) => {
           if (err) throw err;
           connection.userId = userData.userId;
-          connection.username = userData.username;
+          connection.username = userData.user.username;
+          // console.log("User connected : ", connection.user);
           connection.send("data");
         });
       }
@@ -152,7 +154,7 @@ wss.on("connection", (connection, req) => {
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
     const { recipient, text } = messageData;
-    console.log("Message :", text);
+    
     if (recipient && text) {
       const MessageDoc = await MessageModel.create({
         recipient,
