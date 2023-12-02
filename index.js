@@ -12,10 +12,7 @@ const MessageModel = require("./models/message");
 const app = express();
 
 app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-  })
+  cors( ['*'])
 );
 
 app.use(cookieParser());
