@@ -11,7 +11,16 @@ const MessageModel = require("./models/message");
 
 const app = express();
 
-app.use(cors({ origin: [ "https://beamish-cheesecake-6369e3.netlify.app", "https://beamish-cheesecake-6369e3.netlify.app/" , "http://localhost:5173"] , credentials: true }));
+app.use(
+  cors({
+    origin: [
+      "https://beamish-cheesecake-6369e3.netlify.app",
+      "https://beamish-cheesecake-6369e3.netlify.app/",
+      "http://localhost:5173",
+    ],
+    credentials: true,
+  })
+);
 
 app.use(cookieParser());
 app.use(express.json());
@@ -38,15 +47,12 @@ app.post("/register", validateCookie, async (req, res) => {
       username,
       password: hashedPassword,
     });
-    console.log("User : ",createdUser);
     jwt.sign(
       { userId: createdUser._id, user: createdUser },
       process.env.SECRET,
       {},
       (err, token) => {
-        res.cookie("token", token, { sameSite: "none", secure: true });
-
-        res.status(201).json(createdUser);
+        res.cookie("token", token).status(201).json({ user: createdUser, token });
       }
     );
   } catch (err) {
@@ -68,13 +74,13 @@ app.post("/signin", async (req, res) => {
 
     if (passOk == true) {
       jwt.sign(
-        { userId: findUser._id, user : findUser },
+        { userId: findUser._id, user: findUser },
         process.env.SECRET,
         (err, token) => {
           res
-            .cookie("token", token, { secure: true, sameSite: "none" })
+            .cookie("token", token)
             .status(200)
-            .json(findUser);
+            .json({ user: findUser, token });
         }
       );
     } else {
@@ -86,7 +92,7 @@ app.post("/signin", async (req, res) => {
 });
 
 app.get("/profile", (req, res) => {
-  const token = req.cookies.token;
+  const token = req.headers.authorization;
   if (token) {
     jwt.verify(token, process.env.SECRET, {}, (err, decoded) => {
       if (err) {
@@ -131,30 +137,22 @@ const server = app.listen(process.env.PORT || 3000);
 const wss = new ws.WebSocketServer({ server });
 
 wss.on("connection", (connection, req) => {
-  const cookie = req.headers.cookie;
-  if (cookie) {
-    const tokenString = cookie
-      .split(";")
-      .find((str) => str.startsWith("token="));
-
-    if (tokenString) {
-      const token = tokenString.split("=")[1];
-      if (token) {
-        jwt.verify(token, process.env.SECRET, {}, (err, userData) => {
-          if (err) throw err;
-          connection.userId = userData.userId;
-          connection.username = userData.user.username;
-          // console.log("User connected : ", connection.user);
-          connection.send("data");
-        });
-      }
-    }
+  const tokenString = req.headers.cookie;
+  if (tokenString) {
+    const token = tokenString.split("=")[1];
+    jwt.verify(token, process.env.SECRET, {}, (err, userData) => {
+      if (err) throw err;
+      connection.userId = userData.userId;
+      connection.username = userData.user.username;
+      // console.log("User connected : ", connection.user);
+      connection.send("data");
+    });
   }
 
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());
     const { recipient, text } = messageData;
-    
+
     if (recipient && text) {
       const MessageDoc = await MessageModel.create({
         recipient,
