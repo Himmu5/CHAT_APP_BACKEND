@@ -8,7 +8,6 @@ const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
 const ws = require("ws");
 const MessageModel = require("./models/message");
-
 const app = express();
 
 app.use(
@@ -21,7 +20,6 @@ app.use(
     credentials: true,
   })
 );
-
 app.use(cookieParser());
 app.use(express.json());
 const salt = bcrypt.genSaltSync();
