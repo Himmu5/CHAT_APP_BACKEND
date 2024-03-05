@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "nodemon index.js",
-    "start" : "node index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -12,6 +12,7 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.1.0",
     "nodemon": "^2.0.22",
+    "openai": "^4.20.1",
     "ws": "^8.13.0"
   }
 }

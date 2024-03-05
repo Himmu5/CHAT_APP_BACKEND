@@ -9,6 +9,11 @@ const bcrypt = require("bcryptjs");
 const ws = require("ws");
 const MessageModel = require("./models/message");
 const app = express();
+const OpenAIApi = require("openai")
+
+const openai = new OpenAIApi({
+  apiKey: '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'
+})
 
 app.use(
   cors({
@@ -61,6 +66,23 @@ app.post("/register", validateCookie, async (req, res) => {
 function validateCookie(req, res, next) {
   next();
 }
+
+
+app.post('/chat', async (req, res)=> {   
+  try {
+    const query = req.body.query;
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo', // Select the engine you prefer
+      messages : [{ "role" : "user" , "content" : query }],
+      max_tokens : 100
+    });
+    console.log(completion);
+    res.json({ response: completion.choices[0].message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
 
 app.post("/signin", async (req, res) => {
   const { username, password } = req.body;
