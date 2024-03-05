@@ -1,12 +1,10 @@
 const express = require("express");
-const mongoose = require("mongoose");
-require("dotenv").config();
-const { UserModel } = require("./models/users");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const bcrypt = require("bcryptjs");
 const ws = require("ws");
+require("dotenv").config();
+require('./db_config')
 const MessageModel = require("./models/message");
 const app = express();
 const OpenAIApi = require("openai")
@@ -29,20 +27,6 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(authRouter)
-
-
-main().catch((err) => console.log(err));
-main().then((s) => console.log("Db connected"));
-
-async function main() {
-  await mongoose.connect(process.env.DB_URL);
-}
-
-app.get("/", (req, res) => {
-  console.log(req.cookies.token);
-  res.send("Test successfull ");
-});
-
 
 
 app.post('/chat', async (req, res)=> {   
