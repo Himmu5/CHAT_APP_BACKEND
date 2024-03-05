@@ -1,0 +1,57 @@
+
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const UserModel = require("../models/users");
+const salt = bcrypt.genSaltSync();
+
+
+const registerUser = async (req, res) => {
+    const { username, password } = req.body;
+  
+    try {
+      const hashedPassword = bcrypt.hashSync(password, salt);
+      const createdUser = await UserModel.create({
+        username,
+        password: hashedPassword,
+      });
+      jwt.sign(
+        { userId: createdUser._id, user: createdUser },
+        process.env.SECRET,
+        {},
+        (err, token) => {
+          res.cookie("token", token).status(201).json({ user: createdUser, token });
+        }
+      );
+    } catch (err) {
+      res.status(400).json("error");
+    }
+  }
+
+const signinUser = async (req, res) => {
+    const { username, password } = req.body;
+  
+    const findUser = await UserModel.findOne({ username });
+  
+    if (findUser) {
+      const passOk = bcrypt.compareSync(password, findUser.password);
+  
+      if (passOk == true) {
+        jwt.sign(
+          { userId: findUser._id, user: findUser },
+          process.env.SECRET,
+          (err, token) => {
+            res
+              .cookie("token", token)
+              .status(200)
+              .json({ user: findUser, token });
+          }
+        );
+      } else {
+        res.status(404).json("Invalid Credacial!!");
+      }
+    } else {
+      res.status(400).json("Invalid Credientials!!!");
+    }
+  }
+
+module.exports = { registerUser, signinUser }

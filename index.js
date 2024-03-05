@@ -10,6 +10,7 @@ const ws = require("ws");
 const MessageModel = require("./models/message");
 const app = express();
 const OpenAIApi = require("openai")
+const { authRouter } = require("./routes/auth")
 
 const openai = new OpenAIApi({
   apiKey: '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'
@@ -27,7 +28,8 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-const salt = bcrypt.genSaltSync();
+app.use(authRouter)
+
 
 main().catch((err) => console.log(err));
 main().then((s) => console.log("Db connected"));
@@ -41,31 +43,6 @@ app.get("/", (req, res) => {
   res.send("Test successfull ");
 });
 
-app.post("/register", validateCookie, async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const hashedPassword = bcrypt.hashSync(password, salt);
-    const createdUser = await UserModel.create({
-      username,
-      password: hashedPassword,
-    });
-    jwt.sign(
-      { userId: createdUser._id, user: createdUser },
-      process.env.SECRET,
-      {},
-      (err, token) => {
-        res.cookie("token", token).status(201).json({ user: createdUser, token });
-      }
-    );
-  } catch (err) {
-    res.status(400).json("error");
-  }
-});
-
-function validateCookie(req, res, next) {
-  next();
-}
 
 
 app.post('/chat', async (req, res)=> {   
@@ -83,33 +60,6 @@ app.post('/chat', async (req, res)=> {
   }
 })
 
-
-app.post("/signin", async (req, res) => {
-  const { username, password } = req.body;
-
-  const findUser = await UserModel.findOne({ username });
-
-  if (findUser) {
-    const passOk = bcrypt.compareSync(password, findUser.password);
-
-    if (passOk == true) {
-      jwt.sign(
-        { userId: findUser._id, user: findUser },
-        process.env.SECRET,
-        (err, token) => {
-          res
-            .cookie("token", token)
-            .status(200)
-            .json({ user: findUser, token });
-        }
-      );
-    } else {
-      res.status(404).json("Invalid Credacial!!");
-    }
-  } else {
-    res.status(400).json("Invalid Credientials!!!");
-  }
-});
 
 app.get("/profile", (req, res) => {
   const token = req.headers.authorization;
