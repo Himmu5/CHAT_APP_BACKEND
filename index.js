@@ -1,134 +1,28 @@
 const express = require("express");
-const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const ws = require("ws");
 require("dotenv").config();
-require('./db_config')
-const MessageModel = require("./models/message");
+require("./db_config");
 const app = express();
-const OpenAIApi = require("openai")
-const { authRouter } = require("./routes/auth")
-
-const openai = new OpenAIApi({
-  apiKey: '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'
-})
+const { authRouter } = require("./routes/auth");
+const { messageRouter } = require("./routes/messages");
 
 app.use(
   cors({
     origin: [
-      "https://beamish-cheesecake-6369e3.netlify.app",
-      "https://beamish-cheesecake-6369e3.netlify.app/",
       "http://localhost:5173",
     ],
     credentials: true,
   })
 );
+
 app.use(cookieParser());
 app.use(express.json());
-app.use(authRouter)
-
-
-app.post('/chat', async (req, res)=> {   
-  try {
-    const query = req.body.query;
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // Select the engine you prefer
-      messages : [{ "role" : "user" , "content" : query }],
-      max_tokens : 100
-    });
-    console.log(completion);
-    res.json({ response: completion.choices[0].message });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-})
-
-
-app.get("/profile", (req, res) => {
-  const token = req.headers.authorization;
-  if (token) {
-    jwt.verify(token, process.env.SECRET, {}, (err, decoded) => {
-      if (err) {
-        res.status(422).json("error");
-      } else {
-        res.status(200).json(decoded);
-      }
-    });
-  } else {
-    res.status(401).json("No token found");
-  }
-});
-
-app.get("/messages/:userId", async (req, res) => {
-  const userData = await getUserData(req);
-  const { userId } = req.params;
-  const myUserId = userData.userId;
-
-  const messages = await MessageModel.find({
-    sender: { $in: [userId, myUserId] },
-    recipient: { $in: [userId, myUserId] },
-  }).sort({ createdAt: 1 });
-  res.json(messages);
-});
-
-function getUserData(req) {
-  return new Promise((resolve, reject) => {
-    const token = req.cookies?.token;
-    if (token) {
-      jwt.verify(token, process.env.SECRET, {}, (err, userData) => {
-        if (err) throw err;
-        resolve(userData);
-      });
-    } else {
-      reject("no token");
-    }
-  });
-}
-
+app.use(authRouter);
+app.use(messageRouter);
 const server = app.listen(process.env.PORT || 3000);
 
 const wss = new ws.WebSocketServer({ server });
 
-wss.on("connection", (connection, req) => {
-  const tokenString = req.headers.cookie;
-  if (tokenString) {
-    const token = tokenString.split("=")[1];
-    jwt.verify(token, process.env.SECRET, {}, (err, userData) => {
-      if (err) throw err;
-      connection.userId = userData.userId;
-      connection.username = userData.user.username;
-      // console.log("User connected : ", connection.user);
-      connection.send("data");
-    });
-  }
-
-  connection.on("message", async (message) => {
-    const messageData = JSON.parse(message.toString());
-    const { recipient, text } = messageData;
-
-    if (recipient && text) {
-      const MessageDoc = await MessageModel.create({
-        recipient,
-        text,
-        sender: connection.userId,
-      });
-
-      [...wss.clients]
-        .filter((c) => c.userId == recipient)
-        .forEach((c) => c.send(JSON.stringify(MessageDoc)));
-    }
-  });
-
-  [...wss.clients].forEach((client) => {
-    client.send(
-      JSON.stringify({
-        online: [...wss.clients].map((c) => ({
-          userId: c.userId,
-          username: c.username,
-        })),
-      })
-    );
-  });
-  // console.log(wss.clients);
-});
+module.exports = { wss }

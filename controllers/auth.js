@@ -1,7 +1,7 @@
 
+const {UserModel} = require("../models/users");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const UserModel = require("../models/users");
 const salt = bcrypt.genSaltSync();
 
 
@@ -54,4 +54,19 @@ const signinUser = async (req, res) => {
     }
   }
 
-module.exports = { registerUser, signinUser }
+  const reAuth = ()=>(req, res) => {
+    const token = req.headers.authorization;
+    if (token) {
+      jwt.verify(token, process.env.SECRET, {}, (err, decoded) => {
+        if (err) {
+          res.status(422).json("error");
+        } else {
+          res.status(200).json(decoded);
+        }
+      });
+    } else {
+      res.status(401).json("No token found");
+    }
+  }
+
+module.exports = { registerUser, signinUser, reAuth }
