@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const OpenAIApi = require("openai");
 
 const openai = new OpenAIApi({
-  apiKey: "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",
+  apiKey: process.env.OPEN_AI_KEY,
 });
 
 
