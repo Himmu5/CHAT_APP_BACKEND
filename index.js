@@ -7,7 +7,10 @@ require("./db_config");
 const app = express();
 const { authRouter } = require("./routes/auth");
 const { messageRouter } = require("./routes/messages");
+const { setupWss } = require('./socket')
 
+const __init__ = async ()=>{
+  
 app.use(
   cors({
     origin: [
@@ -19,10 +22,11 @@ app.use(
 
 app.use(cookieParser());
 app.use(express.json());
-app.use(authRouter);
-app.use(messageRouter);
+app.use("/",authRouter);
+app.use("",messageRouter);
 const server = app.listen(process.env.PORT || 3000);
+await setupWss(server)
 
-const wss = new ws.WebSocketServer({ server });
+}
 
-module.exports = { wss }
+__init__()

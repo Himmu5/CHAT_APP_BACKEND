@@ -54,7 +54,7 @@ const signinUser = async (req, res) => {
     }
   }
 
-  const reAuth = ()=>(req, res) => {
+  const reAuth = (req, res) => {
     const token = req.headers.authorization;
     if (token) {
       jwt.verify(token, process.env.SECRET, {}, (err, decoded) => {
