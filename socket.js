@@ -14,7 +14,6 @@ const setupWss = async (server) => {
         if (err) throw err;
         connection.userId = userData.userId;
         connection.username = userData.user.username;
-        // console.log("User connected : ", connection.user);
         connection.send("data");
       });
     }
